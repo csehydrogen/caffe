@@ -5,6 +5,7 @@
 #include "caffe/layers/base_conv_layer.hpp"
 #include "caffe/util/im2col.hpp"
 #include "caffe/util/math_functions.hpp"
+#include "caffe/util/mm_func.hpp"
 
 namespace caffe {
 
@@ -321,6 +322,26 @@ void BaseConvolutionLayer<Dtype>::backward_cpu_bias(Dtype* bias,
 }
 
 #ifndef CPU_ONLY
+template <typename Dtype>
+void BaseConvolutionLayer<Dtype>::forward_gpu_mm(const Dtype* input,
+    const Dtype* weights, Dtype* output, bool skip_im2col) {
+  const Dtype* col_buff = input;
+  if (!is_1x1_) {
+    if (!skip_im2col) {
+      conv_im2col_gpu(input, col_buffer_.mutable_gpu_data());
+    }
+    col_buff = col_buffer_.gpu_data();
+  }
+  for (int g = 0; g < group_; ++g) {
+	matrix_multiply<Dtype>(
+	  conv_out_channels_ / group_,
+	  conv_out_spatial_dim_, kernel_dim_,
+	  weights + weight_offset_ * g, 
+	  col_buff + col_offset_ * g, 
+	  output + output_offset_ * g);
+  }
+}
+
 
 template <typename Dtype>
 void BaseConvolutionLayer<Dtype>::forward_gpu_gemm(const Dtype* input,

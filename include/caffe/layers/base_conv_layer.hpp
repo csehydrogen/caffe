@@ -7,6 +7,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/im2col.hpp"
+#include "caffe/util/mm_func.hpp"
 
 namespace caffe {
 
@@ -42,6 +43,9 @@ class BaseConvolutionLayer : public Layer<Dtype> {
   void backward_cpu_bias(Dtype* bias, const Dtype* input);
 
 #ifndef CPU_ONLY
+  void forward_gpu_mm(const Dtype* col_input, const Dtype* weights,
+      Dtype* output, bool skip_im2col = false);
+
   void forward_gpu_gemm(const Dtype* col_input, const Dtype* weights,
       Dtype* output, bool skip_im2col = false);
   void forward_gpu_bias(Dtype* output, const Dtype* bias);
