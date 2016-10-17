@@ -8,18 +8,21 @@ namespace caffe
 		const int M, const int N, const int K,
 		const Dtype* A, const Dtype* B, Dtype* C)
 	{
-		
+		Dtype s = 0;
+		int r = blockIdx.y * blockDim.y + threadIdx.y;
+		int c = blockIdx.x * blockDim.x + threadIdx.x;
+		if (r >= M || c >= N) return;
+		for (int i = 0; i < K; ++i) s += A[r * K + i] * B[i * N + c];
+		C[r * N + c] = s;
 	}	
 	
 	template <typename Dtype>
 	void matrix_multiply(const int M, const int N, const int K,
 		const Dtype* A, const Dtype* B, Dtype* C)
 	{
-		//matrix_multiply_kernel<Dtype><<<>>>(M,N,K,A,B,C);			
-		
-		caffe_gpu_gemm<Dtype>(
-			CblasNoTrans, CblasNoTrans, M, N, K,
-			(Dtype)1., A, B,(Dtype)0., C);
+		dim3 dimBlock(32, 32);
+		dim3 dimGrid(N / dimBlock.x, M / dimBlock.y);
+		matrix_multiply_kernel<<<dimGrid, dimBlock>>>(M, N, K, A, B, C);
 	}
 	
 	template
