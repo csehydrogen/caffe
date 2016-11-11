@@ -16,10 +16,9 @@ void WinoConvolutionLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom
     const Dtype* bottom_data = bottom[i]->gpu_data();
     Dtype* top_data = top[i]->mutable_gpu_data();
 
+	this->forward_gpu_wino(bottom_data, weight, top_data, wino_weight);
       for (int n = 0; n < this->num_; ++n) {
 
-      this->forward_gpu_wino(bottom_data + n * this->bottom_dim_, weight,
-          top_data + n * this->top_dim_, wino_weight);
       if (this->bias_term_) {
         const Dtype* bias = this->blobs_[1]->gpu_data();
         this->forward_gpu_bias(top_data + n * this->top_dim_, bias);

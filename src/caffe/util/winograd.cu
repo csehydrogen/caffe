@@ -11,16 +11,16 @@ namespace caffe{
 template <typename Dtype> 
 __global__ void padSrc_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int outH, int outW, int inputs, int batchs, int pad, float pData, int tNums)
 {
-
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int highIdx = idx / (outH * outW); 
-		int yIdx = (idx % (outH * outW)) / outW - pad;
+		int cIdx = idx / (batchs * outH * outW);
+		int bIdx = idx / (outH * outW) % batchs;
+		int yIdx = idx / outW % outH - pad;
 		int xIdx = idx % outW - pad;
 
 		if(xIdx < 0 || xIdx >= dataW || yIdx < 0 || yIdx >= dataH)
 			dst[idx] = pData; 
 		else
-			dst[idx] = src[highIdx * dataH * dataW + yIdx * dataW + xIdx]; 
+			dst[idx] = src[((bIdx * inputs + cIdx) * dataH + yIdx) * dataW + xIdx]; 
 	}
 }
 
@@ -183,13 +183,12 @@ template <typename Dtype>
 __global__ void winoSrc_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 2 + xIdx * 2;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 2 + xIdx * 2;
 
         dst[bIdx + 0 * gap] = + 1./1. * ( + src[sIdx + 0 * dataW + 0] - src[sIdx + 0 * dataW + 2] - src[sIdx + 2 * dataW + 0] + src[sIdx + 2 * dataW + 2]);
         dst[bIdx + 1 * gap] = + 1./1. * ( + src[sIdx + 0 * dataW + 1] + src[sIdx + 0 * dataW + 2] - src[sIdx + 2 * dataW + 1] - src[sIdx + 2 * dataW + 2]);
@@ -215,13 +214,12 @@ template <typename Dtype>
 __global__ void wino4x4Src_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 4 + xIdx * 4;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 4 + xIdx * 4;
 
         dst[bIdx + 0 * gap] = + 1./1. * ( + src[sIdx + 4 * dataW + 4]) + 4./1. * ( + src[sIdx + 0 * dataW + 4] + src[sIdx + 4 * dataW + 0]) + 5./1. * ( - src[sIdx + 2 * dataW + 4] - src[sIdx + 4 * dataW + 2]) + 16./1. * ( + src[sIdx + 0 * dataW + 0]) + 20./1. * ( - src[sIdx + 0 * dataW + 2] - src[sIdx + 2 * dataW + 0]) + 25./1. * ( + src[sIdx + 2 * dataW + 2]);
         dst[bIdx + 1 * gap] = + 16./1. * ( - src[sIdx + 0 * dataW + 1] - src[sIdx + 0 * dataW + 2]) + 20./1. * ( + src[sIdx + 2 * dataW + 1] + src[sIdx + 2 * dataW + 2]) + 4./1. * ( + src[sIdx + 0 * dataW + 3] + src[sIdx + 0 * dataW + 4] - src[sIdx + 4 * dataW + 1] - src[sIdx + 4 * dataW + 2]) + 5./1. * ( - src[sIdx + 2 * dataW + 3] - src[sIdx + 2 * dataW + 4]) + 1./1. * ( + src[sIdx + 4 * dataW + 3] + src[sIdx + 4 * dataW + 4]);
@@ -266,13 +264,12 @@ template <typename Dtype>
 __global__ void wino6x6Src_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 6 + xIdx * 6;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 6 + xIdx * 6;
 
         dst[bIdx + 0 * gap] = + 21./4. * ( - src[sIdx + 0 * dataW + 2] + src[sIdx + 0 * dataW + 4] - src[sIdx + 2 * dataW + 0] + src[sIdx + 2 * dataW + 6] + src[sIdx + 4 * dataW + 0] - src[sIdx + 4 * dataW + 6] + src[sIdx + 6 * dataW + 2] - src[sIdx + 6 * dataW + 4]) + 1./1. * ( + src[sIdx + 0 * dataW + 0] - src[sIdx + 0 * dataW + 6] - src[sIdx + 6 * dataW + 0] + src[sIdx + 6 * dataW + 6]) + 441./16. * ( + src[sIdx + 2 * dataW + 2] - src[sIdx + 2 * dataW + 4] - src[sIdx + 4 * dataW + 2] + src[sIdx + 4 * dataW + 4]);
         dst[bIdx + 1 * gap] = + 21./4. * ( - src[sIdx + 2 * dataW + 1] - src[sIdx + 2 * dataW + 2] - src[sIdx + 2 * dataW + 5] - src[sIdx + 2 * dataW + 6] + src[sIdx + 4 * dataW + 1] + src[sIdx + 4 * dataW + 2] + src[sIdx + 4 * dataW + 5] + src[sIdx + 4 * dataW + 6]) + 1./1. * ( + src[sIdx + 0 * dataW + 1] + src[sIdx + 0 * dataW + 2] + src[sIdx + 0 * dataW + 5] + src[sIdx + 0 * dataW + 6] - src[sIdx + 6 * dataW + 1] - src[sIdx + 6 * dataW + 2] - src[sIdx + 6 * dataW + 5] - src[sIdx + 6 * dataW + 6]) + 357./16. * ( + src[sIdx + 2 * dataW + 3] + src[sIdx + 2 * dataW + 4] - src[sIdx + 4 * dataW + 3] - src[sIdx + 4 * dataW + 4]) + 17./4. * ( - src[sIdx + 0 * dataW + 3] - src[sIdx + 0 * dataW + 4] + src[sIdx + 6 * dataW + 3] + src[sIdx + 6 * dataW + 4]);
@@ -346,13 +343,12 @@ template <typename Dtype>
 __global__ void winoSrcAddOpt_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 2 + xIdx * 2;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 2 + xIdx * 2;
 
 		Dtype t[5];
 		dst[bIdx + 0 * gap] = + 1./1. * ( + src[sIdx + 0 * dataW + 0] - src[sIdx + 0 * dataW + 2] - src[sIdx + 2 * dataW + 0] + src[sIdx + 2 * dataW + 2]);
@@ -387,13 +383,12 @@ template <typename Dtype>
 __global__ void wino4x4SrcAddOpt_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 4 + xIdx * 4;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 4 + xIdx * 4;
 
 		Dtype t[30];
 		t[3] = - src[sIdx + 2 * dataW + 4] - src[sIdx + 4 * dataW + 2];
@@ -491,13 +486,12 @@ template <typename Dtype>
 __global__ void wino6x6SrcAddOpt_gpu_kernel(const Dtype *src, Dtype *dst, int dataH, int dataW, int tileH, int tileW, int inputs, int batchs, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int gap = tileH * tileW * inputs * batchs;
-		int batchIdx = idx / (tileH * tileW * inputs);
-		int inputIdx = (idx / (tileH * tileW)) % inputs ;
-		int yIdx = (idx % (tileH * tileW)) / tileW ;
+		int gap = inputs * batchs * tileH * tileW;
+		int highIdx = idx / (tileH * tileW);
+		int yIdx = idx / tileW % tileH;
 		int xIdx = idx % tileW;
-		int bIdx =  idx % gap;
-		int sIdx = batchIdx * inputs * dataW * dataH + inputIdx * dataW * dataH + yIdx * dataW * 6 + xIdx * 6;
+		int bIdx = idx;
+		int sIdx = highIdx * dataW * dataH + yIdx * dataW * 6 + xIdx * 6;
 
 		Dtype t[106];
 		t[2] = - src[sIdx + 4 * dataW + 6] - src[sIdx + 6 * dataW + 4];
@@ -1144,14 +1138,16 @@ __global__ void wino6x6DstAddOpt_gpu_kernel(const Dtype *src, Dtype * dst, const
 
 template <typename Dtype> 
 __global__ void unpadDst_gpu_kernel(const Dtype *src, Dtype *dst,
+		const int batchs, const int num_outputs,
 		const int height_out_p, const int width_out_p,
 		const int height_out, const int width_out, int tNums)
 {
 	CUDA_KERNEL_LOOP(idx, tNums) {
-		int highIdx = idx / (height_out * width_out);
-		int yIdx = idx % (height_out * width_out) / width_out;
+		int bIdx = idx / (num_outputs * height_out * width_out);
+		int cIdx = idx / (height_out * width_out) % num_outputs;
+		int yIdx = idx / width_out % height_out;
 		int xIdx = idx % width_out;
-		dst[idx] = src[highIdx * height_out_p * width_out_p + yIdx * width_out_p + xIdx]; 
+		dst[idx] = src[((cIdx * batchs + bIdx) * height_out_p + yIdx) * width_out_p + xIdx]; 
 	}
 }
 
@@ -1327,7 +1323,7 @@ void unpadDst_gpu(const int batchs, const int num_outputs,
 		const Dtype *o_matrix, Dtype *output)
 {
 	int num_kernels = batchs * num_outputs * height_out * width_out;
-	unpadDst_gpu_kernel<Dtype><<<CAFFE_GET_BLOCKS(num_kernels), CAFFE_CUDA_NUM_THREADS>>>(o_matrix, output, height_out_p, width_out_p, height_out, width_out, num_kernels); 
+	unpadDst_gpu_kernel<Dtype><<<CAFFE_GET_BLOCKS(num_kernels), CAFFE_CUDA_NUM_THREADS>>>(o_matrix, output, batchs, num_outputs, height_out_p, width_out_p, height_out, width_out, num_kernels); 
 }
 
 template void unpadDst_gpu(const int batchs, const int num_outputs,

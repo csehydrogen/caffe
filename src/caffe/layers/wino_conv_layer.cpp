@@ -35,7 +35,7 @@ void WinoConvolutionLayer<Dtype>::Reshape(
 	bottom_offset_ = this->bottom_dim_ / this->group_;
 	top_offset_ = this->top_dim_ / this->group_;
   
-  	const int batchs = 1; // this->num_; 
+  	const int batchs = this->num_; // this->num_; 
 	const int num_inputs = this->channels_; 
 	const int num_outputs = this->num_output_ ; 
 	
@@ -147,7 +147,7 @@ void WinoConvolutionLayer<Dtype>::forward_gpu_wino(const Dtype* input,
     const Dtype* weights, Dtype* output, const Dtype *wino_weights, bool skip_im2col) {
 	const Dtype* u_matrix = wino_weights; 
 
-	const int batchs = 1; // this->num_; 
+	const int batchs = this->num_; // this->num_; 
 	const int num_inputs = this->channels_ / this->group_; 
 	const int num_outputs = this->num_output_ ; 
 	
